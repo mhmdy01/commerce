@@ -12,4 +12,7 @@ urlpatterns = [
     path("users/<str:username>", views.user_profile, name="user_profile"),
     path("categories/<int:category_id>", views.display_category, name="display_category"),
     path("categories", views.all_categories, name="all_categories"),
+    # there's no need for this
+    # display_listing already contain the required info: listing_id
+    # path("listings/<int:listing_id>/bid", views.place_bid, name="place_bid"),
 ]

@@ -12,6 +12,30 @@
     </div>
     <p>{{ listing.description }}</p>
     <p><strong>${{ listing.price }}</strong></p>
+
+    <!-- bidding info -->
+    {% if show_bid_form %}
+        {% if bid_form_error %}
+            <div class="alert alert-danger">{{ bid_form_error }}</div>
+        {% endif %}
+        <div>
+            <small>{{ bids_count }} bids so far. Your Bid is the Current Bid</small>
+            <form action="" method="POST">
+                {% csrf_token %}
+                {{ bid_form.as_p }}
+                <input type="submit" value="Place Bid" class="btn btn-primary">
+            </form>
+        </div>
+
+    <!-- there must actual bids from other users
+        so that, owner initial price doesn't show as bid with count 1
+    -->
+    {% elif show_bids and bids_count %}
+        <div>
+            Max Bid:
+            <strong>${{ max_bid }}</strong>
+        </div>
+    {% endif %}
     <h3>Details</h3>
     <ul>
         <li>Listed by: 
