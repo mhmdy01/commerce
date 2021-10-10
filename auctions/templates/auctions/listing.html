@@ -3,10 +3,13 @@
 
 {% block body %}
     <h2>Listing: {{ listing.title }}</h2>
-    {% if listing.img_url %}
-	    <img class="card-img-top" src="{{ listing.img_url }}" alt="{{ listing.title }}">
-    {% else %}
-        <img class="card-img-top" src="{% static 'auctions/images/notfound.png' %}" alt="{{ listing.title }}">
-    {% endif %}
+    <div>
+        {% if listing.img_url %}
+            <img src="{{ listing.img_url }}" alt="{{ listing.title }}">
+        {% else %}
+            <img src="{% static 'auctions/images/notfound.png' %}" alt="img not found">
+        {% endif %}
+    </div>
     <p>{{ listing.description }}</p>
+    <p><strong>${{ listing.price }}</strong></p>
 {% endblock %}
