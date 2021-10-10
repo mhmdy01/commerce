@@ -12,4 +12,12 @@
     </div>
     <p>{{ listing.description }}</p>
     <p><strong>${{ listing.price }}</strong></p>
+    <h3>Details</h3>
+    <ul>
+        <li>Listed by: 
+            <a href="{% url 'user_profile' listing.owner.username %}">
+                {{ listing.owner }}
+            </a>
+        </li>
+    </ul>
 {% endblock %}

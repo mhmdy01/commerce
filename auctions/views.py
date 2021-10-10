@@ -71,6 +71,7 @@ def create_listing(request):
         form = NewListingForm(request.POST)
         if form.is_valid():
             listing = form.save(commit=False)
+            listing.owner = request.user
             listing.save()
             return redirect(reverse('display_listing', kwargs={'listing_id': listing.id}))
         else:
@@ -86,4 +87,11 @@ def display_listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     return render(request, 'auctions/listing.html', {
         'listing': listing,
+    })
+
+def user_profile(request, username):
+    user = User.objects.get(username=username)
+    return render(request, 'auctions/user.html', {
+        'user_obj': user,
+        'listings': user.listings.all(),
     })
