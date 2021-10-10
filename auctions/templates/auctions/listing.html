@@ -19,5 +19,14 @@
                 {{ listing.owner }}
             </a>
         </li>
+        <li>Category:
+            {% if listing.category %}
+                <a href="{% url 'display_category' listing.category.id %}">
+                    {{ listing.category }}
+                </a>
+            {% else %}
+                <span>No Category Listed</span>
+            {% endif %}
+        </li>
     </ul>
 {% endblock %}

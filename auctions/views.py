@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from .models import User, Listing
+from .models import User, Listing, Category
 from .forms import NewListingForm
 
 def index(request):
@@ -94,4 +94,16 @@ def user_profile(request, username):
     return render(request, 'auctions/user.html', {
         'user_obj': user,
         'listings': user.listings.all(),
+    })
+
+def display_category(request, category_id):
+    category = Category.objects.get(pk=category_id)
+    return render(request, 'auctions/category.html', {
+        'category': category,
+        'listings': category.listings.all(),
+    })
+
+def all_categories(request):
+    return render(request, 'auctions/categories.html', {
+        'categories': Category.objects.all(),
     })
