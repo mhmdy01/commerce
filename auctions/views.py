@@ -1,14 +1,17 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from .models import User
-
+from .models import User, Listing
+from .forms import NewListingForm
 
 def index(request):
-    return render(request, "auctions/index.html")
+    return render(request, "auctions/index.html", {
+        "listings": Listing.objects.all()
+    })
 
 
 def login_view(request):
@@ -61,3 +64,26 @@ def register(request):
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "auctions/register.html")
+
+@login_required(login_url='login')
+def create_listing(request):
+    if request.method == 'POST':
+        form = NewListingForm(request.POST)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.save()
+            return redirect(reverse('display_listing', kwargs={'listing_id': listing.id}))
+        else:
+            return render(request, 'auctions/create_listing.html', {
+                'form': form
+            })
+    else:
+        return render(request, 'auctions/create_listing.html', {
+            'form': NewListingForm()
+        })
+
+def display_listing(request, listing_id):
+    listing = Listing.objects.get(pk=listing_id)
+    return render(request, 'auctions/listing.html', {
+        'listing': listing,
+    })

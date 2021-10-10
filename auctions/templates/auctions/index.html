@@ -1,7 +1,22 @@
 {% extends "auctions/layout.html" %}
+{% load static %}
 
 {% block body %}
     <h2>Active Listings</h2>
-
-    TODO
+    <div class="card-deck">
+        {% for listing in listings %}
+            <div class="card">
+                {% if listing.img_url %}
+                    <img class="card-img-top" src="{{ listing.img_url }}" alt="{{ listing.title }}">
+                {% else %}
+                    <img class="card-img-top" src="{% static 'auctions/images/notfound.png' %}" alt="{{ listing.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ listing.title }}</h5>
+                    <p class="card-text">{{ listing.description }}</p>
+                    <a href="{% url 'display_listing' listing.id %}" class="btn btn-primary">Details</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% endblock %}
