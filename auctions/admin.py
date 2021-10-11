@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import Listing, Category, Bid
 
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ('title', 'description', 'img_url', 'price', 'owner', 'category')
+    list_display = ('title', 'description', 'img_url', 'price', 'owner', 'category', 'is_active')
 
 class BidAdmin(admin.ModelAdmin):
     list_display = ('price', 'listing', 'user')

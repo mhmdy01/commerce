@@ -12,7 +12,7 @@ from .forms import NewListingForm, NewBidForm
 
 def index(request):
     return render(request, "auctions/index.html", {
-        "listings": Listing.objects.all()
+        "listings": Listing.objects.filter(is_active=True)
     })
 
 
@@ -99,10 +99,32 @@ def display_listing(request, listing_id):
         max_bid = listing.bids.all().aggregate(Max('price')).get('price__max')
     # print('max_bid:', max_bid)
     
-    show_bid_form = request.user.is_authenticated and listing.owner != request.user
-    show_bids = request.user.is_authenticated and listing.owner == request.user
+    show_bid_form = (
+        request.user.is_authenticated
+        and listing.owner != request.user
+        and listing.is_active
+    )
+    show_bids = (
+        request.user.is_authenticated
+        and listing.owner == request.user
+        and listing.is_active
+    )
     # print('show_bid_form:', show_bid_form)
     # print('show_bids:', show_bids)
+    
+    # only available if at least one bid? and not already close
+    can_close_listing = (
+        show_bids
+        and bids_count > 0
+    )
+    current_user_bid = (
+        request.user.is_authenticated
+        and listing.bids.filter(user=request.user).aggregate(Max('price')).get('price__max')
+    )
+    did_current_user_win = (
+        not listing.is_active
+        and current_user_bid == max_bid
+    )
     
     # if placing a bid
     if request.method == 'POST':
@@ -148,8 +170,18 @@ def display_listing(request, listing_id):
         'max_bid': max_bid,
         'show_bid_form': show_bid_form,
         'show_bids': show_bids,
+        'can_close_listing': can_close_listing,
+        'did_current_user_win': did_current_user_win,
         'bid_form': NewBidForm()
     })
+
+def close_listing(request, listing_id):
+    if not request.method == 'POST':
+        return HttpResponseForbidden()
+    listing = Listing.objects.get(pk=listing_id)
+    listing.is_active = False
+    listing.save()
+    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
 
 def user_profile(request, username):
     user = User.objects.get(username=username)
@@ -162,7 +194,7 @@ def display_category(request, category_id):
     category = Category.objects.get(pk=category_id)
     return render(request, 'auctions/category.html', {
         'category': category,
-        'listings': category.listings.all(),
+        'listings': category.listings.filter(is_active=True),
     })
 
 def all_categories(request):

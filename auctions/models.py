@@ -19,6 +19,8 @@ class Listing(models.Model):
     img_url = models.URLField(max_length=128, blank=True, default='')
     price = models.DecimalField(max_digits=11, decimal_places=2, validators=[MinValueValidator(Decimal(1.0))])
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
+    is_active = models.BooleanField(default=True)
+    
     # listing could have one category or none
     # choosen by user form a provided list (created by admin)
     # TODO: to set optional fk> both blank & null are required for some reason

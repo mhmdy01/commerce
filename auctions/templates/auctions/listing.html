@@ -2,7 +2,22 @@
 {% load static %}
 
 {% block body %}
-    <h2>Listing: {{ listing.title }}</h2>
+    {% if did_current_user_win %}
+        <div class="alert alert-primary" role="alert">
+            Your bid (${{ max_bid }}) won this auction!
+        </div>
+    {% elif not listing.is_active %}
+        <div class="alert alert-primary" role="alert">
+            The winning bid is (${{ max_bid }})!
+        </div>
+    {% endif %}
+    </div>
+    <h2>
+        Listing: {{ listing.title }}
+        {% if not listing.is_active %}
+            <span class="badge badge-secondary">Closed</span>
+        {% endif %}
+    </h2>
     <div>
         {% if listing.img_url %}
             <img src="{{ listing.img_url }}" alt="{{ listing.title }}">
@@ -34,6 +49,12 @@
         <div>
             Max Bid:
             <strong>${{ max_bid }}</strong>
+            {% if can_close_listing %}
+                <form action="{% url 'close_listing' listing.id %}" method="POST">
+                    {% csrf_token %}
+                    <input class="btn btn-primary" type="submit" value="Accept Bid & Close Listing">
+                </form>
+            {% endif %}
         </div>
     {% endif %}
     <h3>Details</h3>
