@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from .models import Bid, User, Listing, Category
-from .forms import NewListingForm, NewBidForm
+from .forms import NewListingForm, NewBidForm, NewCommentForm
 
 def index(request):
     return render(request, "auctions/index.html", {
@@ -87,6 +87,7 @@ def create_listing(request):
 
 def display_listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
+    comments = listing.comments.all()
     
     # must filter bids for current listing only> listing.bids
     bids_count = listing.bids.all().count()
@@ -124,6 +125,11 @@ def display_listing(request, listing_id):
     did_current_user_win = (
         not listing.is_active
         and current_user_bid == max_bid
+    )
+
+    show_comments_form = (
+        request.user.is_authenticated
+        and listing.is_active
     )
     
     # if placing a bid
@@ -166,13 +172,16 @@ def display_listing(request, listing_id):
 
     return render(request, 'auctions/listing.html', {
         'listing': listing,
+        'comments': comments,
         'bids_count': bids_count,
         'max_bid': max_bid,
         'show_bid_form': show_bid_form,
         'show_bids': show_bids,
+        'show_comments_form': show_comments_form,
         'can_close_listing': can_close_listing,
         'did_current_user_win': did_current_user_win,
-        'bid_form': NewBidForm()
+        'bid_form': NewBidForm(),
+        'comment_form': NewCommentForm()
     })
 
 def close_listing(request, listing_id):
@@ -202,3 +211,23 @@ def all_categories(request):
         'categories': Category.objects.all(),
     })
 
+
+def add_comment(request, listing_id):
+    if not request.method == 'POST' or not request.user.is_authenticated:
+        return HttpResponseForbidden()
+    
+    listing = Listing.objects.get(pk=listing_id)
+    form = NewCommentForm(request.POST)
+    comment = form.save(commit=False)
+    comment.listing = listing
+    comment.user = request.user
+    comment.save()
+    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+    
+    # TODO
+    # if form.is_valid():
+    #     listing.is_active = False
+    #     listing.save()
+    #     return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+    # else:
+    #     pass

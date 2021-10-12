@@ -18,4 +18,6 @@ urlpatterns = [
     # path("listings/<int:listing_id>/bid", views.place_bid, name="place_bid"),
 
     path("listings/<int:listing_id>/close", views.close_listing, name="close_listing"),
+
+    path("listings/<int:listing_id>/comment", views.add_comment, name="add_comment"),
 ]
