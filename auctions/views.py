@@ -7,7 +7,7 @@ from django.http.response import HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from .models import Bid, User, Listing, Category
+from .models import Bid, User, Listing, Category, Watchlist
 from .forms import NewListingForm, NewBidForm, NewCommentForm
 
 def index(request):
@@ -63,6 +63,11 @@ def register(request):
                 "message": "Username already taken."
             })
         login(request, user)
+        
+        # create watchlist once user signed up successfully
+        user_watchlist = Watchlist(user=request.user)
+        user_watchlist.save()
+
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "auctions/register.html")
@@ -131,6 +136,11 @@ def display_listing(request, listing_id):
         request.user.is_authenticated
         and listing.is_active
     )
+
+    # watchlist details
+    # does the user's watchlist include the current listing?
+    user_watchlist = request.user.watchlist
+    is_watchlisted = user_watchlist.listings.filter(pk=listing_id).exists()
     
     # if placing a bid
     if request.method == 'POST':
@@ -180,6 +190,7 @@ def display_listing(request, listing_id):
         'show_comments_form': show_comments_form,
         'can_close_listing': can_close_listing,
         'did_current_user_win': did_current_user_win,
+        'is_watchlisted': is_watchlisted,
         'bid_form': NewBidForm(),
         'comment_form': NewCommentForm()
     })
@@ -231,3 +242,27 @@ def add_comment(request, listing_id):
     #     return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
     # else:
     #     pass
+
+def add_to_watchlist(request, listing_id):
+    if not request.method == 'POST' or not request.user.is_authenticated:
+        return HttpResponseForbidden()
+    
+    listing = Listing.objects.get(pk=listing_id)
+    user_watchlist = request.user.watchlist
+    user_watchlist.listings.add(listing)
+    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+
+def remove_from_watchlist(request, listing_id):
+    if not request.method == 'POST' or not request.user.is_authenticated:
+        return HttpResponseForbidden()
+    
+    listing = Listing.objects.get(pk=listing_id)
+    user_watchlist = request.user.watchlist
+    user_watchlist.listings.remove(listing)
+    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+
+login_required(login_url='login')
+def display_watchlist(request):
+    return render(request, 'auctions/watchlist.html', {
+        'listings': Watchlist.objects.get(user=request.user).listings.all()
+    })

@@ -19,6 +19,22 @@
         {% endif %}
     </h2>
     <div>
+        {% if is_watchlisted %}
+            <form action="{% url 'remove_from_watchlist' listing.id %}" method="POST">
+                {% csrf_token %}
+                <input class="btn btn-danger" type="submit" value="Remove from Watchlist">
+            </form>
+        <!-- ONLY WATCHLIST active, not already @watchlist,
+            not belongs to current_user (ie. user isn't owner)
+        -->
+        {% elif listing.is_active and not is_watchlisted and show_bid_form %}
+            <form action="{% url 'add_to_watchlist' listing.id %}" method="POST">
+                {% csrf_token %}
+                <input class="btn btn-secondary" type="submit" value="Add to Watchlist">
+            </form>
+        {% endif %}
+    </div>
+    <div>
         {% if listing.img_url %}
             <img src="{{ listing.img_url }}" alt="{{ listing.title }}">
         {% else %}
