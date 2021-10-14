@@ -6,7 +6,7 @@ class ListingAdmin(admin.ModelAdmin):
     list_display = ('title', 'description', 'img_url', 'price', 'owner', 'category', 'is_active')
 
 class BidAdmin(admin.ModelAdmin):
-    list_display = ('price', 'listing', 'user')
+    list_display = ('price', 'listing', 'user', 'is_winner')
 
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('content', 'listing', 'user')

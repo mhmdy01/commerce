@@ -50,7 +50,7 @@
             <div class="alert alert-danger">{{ bid_form_error }}</div>
         {% endif %}
         <div>
-            <small>{{ bids_count }} bids so far. Your Bid is the Current Bid</small>
+            <small>{{ bids_count }} bid{{ bids_count|pluralize }} so far. Your Bid is the Current Bid</small>
             <form action="" method="POST">
                 {% csrf_token %}
                 {{ bid_form.as_p }}

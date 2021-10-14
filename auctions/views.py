@@ -123,13 +123,20 @@ def display_listing(request, listing_id):
         show_bids
         and bids_count > 0
     )
-    current_user_bid = (
-        request.user.is_authenticated
-        and listing.bids.filter(user=request.user).aggregate(Max('price')).get('price__max')
-    )
+    # TODO/tradeoffs: short-circuting using and vs. implicit conditions @filters
+    ##### THIS BAD #####
+    # no need to check authentication (ie. req.user.is_auth)
+    # cuz we filter by current user and if not authenticated, filtering would fail
+    # no need to check for listing status (ie. listing.is_active)
+    # cuz we filter by winning bid and if there's any,
+    # that means the listing is already closed
+    # did_current_user_win = listing.bids.filter(user=request.user, is_winner=True).count() == 1
+    ##### ------ #####
+    ##### THIS GOOD #####
     did_current_user_win = (
-        not listing.is_active
-        and current_user_bid == max_bid
+        request.user.is_authenticated
+        and not listing.is_active
+        and listing.bids.filter(user=request.user, is_winner=True).count() == 1
     )
 
     show_comments_form = (
@@ -201,6 +208,11 @@ def close_listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     listing.is_active = False
     listing.save()
+    # find winner bid for this listing (the one with max price)
+    price_of_max_bid = listing.bids.all().aggregate(Max('price')).get('price__max')
+    max_bid = listing.bids.get(price=price_of_max_bid)
+    max_bid.is_winner = True
+    max_bid.save()
     return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
 
 def user_profile(request, username):
