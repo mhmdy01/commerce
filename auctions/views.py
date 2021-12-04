@@ -2,9 +2,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Max
-from django.http import HttpResponse, HttpResponseRedirect
-from django.http.response import HttpResponseForbidden
-from django.shortcuts import render, redirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
 from .models import Bid, User, Listing, Category, Watchlist
@@ -235,25 +234,27 @@ def all_categories(request):
     })
 
 
+@login_required(login_url='login')
 def add_comment(request, listing_id):
-    if not request.method == 'POST' or not request.user.is_authenticated:
-        return HttpResponseForbidden()
-    
-    listing = Listing.objects.get(pk=listing_id)
+    # reject non-POST requests
+    if not request.method == 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    # get listing and handle if not found
+    listing = get_object_or_404(Listing, pk=listing_id)
+
+    # reject comments on closed listings
+    if not listing.is_active:
+        return HttpResponseBadRequest()
+
+    # process form
     form = NewCommentForm(request.POST)
-    comment = form.save(commit=False)
-    comment.listing = listing
-    comment.user = request.user
-    comment.save()
-    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
-    
-    # TODO
-    # if form.is_valid():
-    #     listing.is_active = False
-    #     listing.save()
-    #     return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
-    # else:
-    #     pass
+    if form.is_valid():
+        form.instance.listing = listing
+        form.instance.user = request.user
+        form.save()
+        return redirect(reverse('display_listing', args=(listing_id,)))
+    return HttpResponseBadRequest()
 
 def add_to_watchlist(request, listing_id):
     if not request.method == 'POST' or not request.user.is_authenticated:
