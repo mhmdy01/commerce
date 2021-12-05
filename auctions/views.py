@@ -5,6 +5,8 @@ from django.db.models import Max
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.views.generic import ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .models import Bid, User, Listing, Category, Watchlist
 from .forms import NewListingForm, NewBidForm, NewCommentForm
@@ -302,8 +304,11 @@ def remove_from_watchlist(request, listing_id):
     # redirect to listing details page
     return redirect(reverse('display_listing', args=(listing_id,)))
 
-login_required(login_url='login')
-def display_watchlist(request):
-    return render(request, 'auctions/watchlist.html', {
-        'listings': Watchlist.objects.get(user=request.user).listings.all()
-    })
+
+class WatchlistView(LoginRequiredMixin, ListView):
+    login_url = 'login'
+    template_name = 'auctions/watchlist.html'
+    context_object_name = 'listings'
+
+    def get_queryset(self):
+        return self.request.user.watchlist.listings.all()
