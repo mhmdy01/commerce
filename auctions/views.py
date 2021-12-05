@@ -282,14 +282,25 @@ def add_to_watchlist(request, listing_id):
     # redirect to listing details page
     return redirect(reverse('display_listing', args=(listing_id,)))
 
+
+@login_required(login_url='login')
 def remove_from_watchlist(request, listing_id):
-    if not request.method == 'POST' or not request.user.is_authenticated:
-        return HttpResponseForbidden()
-    
-    listing = Listing.objects.get(pk=listing_id)
-    user_watchlist = request.user.watchlist
-    user_watchlist.listings.remove(listing)
-    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+    # reject non-POST requests
+    if not request.method == 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    # get listing and handle if not found
+    listing = get_object_or_404(Listing, pk=listing_id)
+
+    # reject unwatching listings that NOT currenlty on user's watchlist
+    if not request.user.watchlist.listings.filter(pk=listing_id).exists():
+        return HttpResponseBadRequest()
+
+    # remove listing from user's watchlist
+    request.user.watchlist.listings.remove(listing)
+
+    # redirect to listing details page
+    return redirect(reverse('display_listing', args=(listing_id,)))
 
 login_required(login_url='login')
 def display_watchlist(request):
