@@ -1,0 +1,17 @@
+{% load static %}
+
+{% if can_watch %}
+    <form action="{% url 'add_to_watchlist' listing.id %}" method="POST">
+        {% csrf_token %}
+        <button class="watchlist-icon" title="Add to Watchlist" type="submit">
+            <img src="{% static 'auctions/icons/watchlist-add.png' %}" alt="add to watchlist icon">
+        </button>
+    </form>
+{% elif can_unwatch %}
+    <form action="{% url 'remove_from_watchlist' listing.id %}" method="POST">
+        {% csrf_token %}
+        <button class="watchlist-icon" title="Remove from Watchlist" type="submit">
+            <img src="{% static 'auctions/icons/watchlist-rm.png' %}" alt="remove from watchlist icon">
+        </button>
+    </form>
+{% endif %}
