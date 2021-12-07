@@ -1,3 +1,19 @@
 body {
     padding: 10px;
 }
+
+.watchlist-icon {
+    background: none;
+    padding: 0px;
+    border: none;
+}
+
+.watchlist-icon > img {
+    width: 50px;
+}
+
+.title-container {
+    display: flex;
+    column-gap: 10px;
+    align-items: center;
+}

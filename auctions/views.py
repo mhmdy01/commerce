@@ -146,10 +146,25 @@ def display_listing(request, listing_id):
     )
 
     # watchlist details
-    # does the user's watchlist include the current listing?
-    user_watchlist = request.user.watchlist
-    is_watchlisted = user_watchlist.listings.filter(pk=listing_id).exists()
-    
+    # when to show add-to-watchlist btn/form?
+    #  - current user is logged in
+    #  - listing is active
+    #  - listing isn't created by current user
+    #  - listing isn't currently on current user's watchlist
+    # when to show rm-from-watchlist btn/form?
+    #  - current user is logged in
+    #  - listing is currently on current user's watchlist
+    can_watch = (
+        request.user.is_authenticated
+        and listing.is_active
+        and not request.user == listing.owner
+        and not request.user.watchlist.listings.filter(pk=listing_id).exists()
+    )
+    can_unwatch = (
+        request.user.is_authenticated
+        and request.user.watchlist.listings.filter(pk=listing_id).exists()
+    )
+
     # if placing a bid
     if request.method == 'POST':
         form = NewBidForm(request.POST)
@@ -172,6 +187,8 @@ def display_listing(request, listing_id):
                     'show_bids': show_bids,
                     'bid_form': form,
                     'bid_form_error': error,
+                    'can_watch': can_watch,
+                    'can_unwatch': can_unwatch,
                 })
             # valid bid
             else:
@@ -186,6 +203,8 @@ def display_listing(request, listing_id):
                 'show_bid_form': show_bid_form,
                 'show_bids': show_bids,
                 'bid_form': form,
+                'can_watch': can_watch,
+                'can_unwatch': can_unwatch,
             })
 
     return render(request, 'auctions/listing.html', {
@@ -198,7 +217,8 @@ def display_listing(request, listing_id):
         'show_comments_form': show_comments_form,
         'can_close_listing': can_close_listing,
         'did_current_user_win': did_current_user_win,
-        'is_watchlisted': is_watchlisted,
+        'can_watch': can_watch,
+        'can_unwatch': can_unwatch,
         'bid_form': NewBidForm(),
         'comment_form': NewCommentForm()
     })
