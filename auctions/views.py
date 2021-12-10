@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from . import utils
 from .models import Bid, User, Listing, Category, Watchlist
 from .forms import NewListingForm, NewBidForm, NewCommentForm
 
@@ -228,6 +229,49 @@ def all_categories(request):
     return render(request, 'auctions/categories.html', {
         'categories': Category.objects.all(),
     })
+
+
+@login_required(login_url='login')
+def place_bid(request, listing_id):
+    # reject non-POST requests
+    if not request.method == 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    # get listing and handle if not found
+    listing = get_object_or_404(Listing, pk=listing_id)
+
+    # reject bidding if:
+    #  - listing is closed
+    #  - current user is listing owner
+    is_closed = not listing.is_active
+    is_owner = listing.owner == request.user
+    if is_closed or is_owner:
+        return HttpResponseBadRequest()
+
+    # validate bidding form
+    form = NewBidForm(request.POST)
+    if form.is_valid():
+        # validate bid price
+        # MUST BE GREATER THAN max bid so far
+        bid_price = form.instance.price
+        max_bid_price = utils.get_max_bid_price(listing)
+        # if not valid price
+        # inform user
+        if bid_price <= max_bid_price:
+            error = f"Your bid (${bid_price}) must be greater than the current max bid of (${max_bid_price})"
+            return HttpResponseBadRequest(error)
+
+        # if valid price
+        # create a new bid
+        # and redirect to listing page
+        form.instance.user = request.user
+        form.instance.listing = listing
+        form.save()
+        return redirect(reverse('display_listing', args=(listing_id,)))
+    else:
+        # access form errors and send to user
+        error = str(form.errors)
+        return HttpResponseBadRequest(error)
 
 
 @login_required(login_url='login')
