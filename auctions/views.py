@@ -95,18 +95,10 @@ def create_listing(request):
 def display_listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     comments = listing.comments.all()
-    
-    # must filter bids for current listing only> listing.bids
-    bids_count = listing.bids.all().count()
-    # print('all_bids:', bids_count)
-    if not bids_count:
-        max_bid = listing.price
-    else:
-        # must filter bids for current listing only> listing.bids
-        # not max bid (in general)> Bid.objects.all
-        max_bid = listing.bids.all().aggregate(Max('price')).get('price__max')
-    # print('max_bid:', max_bid)
-    
+
+    bids_count = listing.bids.count()
+    max_bid = utils.get_max_bid_price(listing)
+
     show_bid_form = (
         request.user.is_authenticated
         and listing.owner != request.user
@@ -145,44 +137,6 @@ def display_listing(request, listing_id):
         request.user.is_authenticated
         and listing.is_active
     )
-
-    # if placing a bid
-    if request.method == 'POST':
-        form = NewBidForm(request.POST)
-        # automatic validation #
-        if form.is_valid():
-            bid = form.save(commit=False)
-            
-            # manual validation #
-            # bid value must be > max_bid.. which is:
-            # price      (if no bids)
-            # max(price) (if there bids)
-
-            # invalid bid
-            if bid.price <= max_bid:
-                error = f"Your bid (${bid.price}) must be greater than the current max bid of (${max_bid})"
-                return render(request, 'auctions/listing.html', {
-                    'listing': listing,
-                    'bids_count': bids_count,
-                    'show_bid_form': show_bid_form,
-                    'show_bids': show_bids,
-                    'bid_form': form,
-                    'bid_form_error': error,
-                })
-            # valid bid
-            else:
-                bid.user = request.user
-                bid.listing = listing
-                bid.save()
-                return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
-        else:
-            return render(request, 'auctions/listing.html', {
-                'listing': listing,
-                'bids_count': bids_count,
-                'show_bid_form': show_bid_form,
-                'show_bids': show_bids,
-                'bid_form': form,
-            })
 
     return render(request, 'auctions/listing.html', {
         'listing': listing,

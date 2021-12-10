@@ -39,7 +39,7 @@
         {% endif %}
         <div>
             <small>{{ bids_count }} bid{{ bids_count|pluralize }} so far. Your Bid is the Current Bid</small>
-            <form action="" method="POST">
+            <form action="{% url 'place_bid' listing.id %}" method="POST">
                 {% csrf_token %}
                 {{ bid_form.as_p }}
                 <input type="submit" value="Place Bid" class="btn btn-primary">
