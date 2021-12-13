@@ -3,101 +3,113 @@
 {% load watchlist_forms %}
 
 {% block body %}
-    {% if did_current_user_win %}
-        <div class="alert alert-primary" role="alert">
-            Your bid (${{ max_bid }}) won this auction!
-        </div>
-    {% elif not listing.is_active %}
-        <div class="alert alert-primary" role="alert">
-            The winning bid is (${{ max_bid }})!
-        </div>
-    {% endif %}
-    </div>
-    <div class="title-container">
-        <h2>
-            Listing: {{ listing.title }}
-            {% if not listing.is_active %}
-                <span class="badge badge-secondary">Closed</span>
+    <div class="listing-details" data-id="{{ listing.id }}">
+        <div class="listing-alerts">
+            {% if did_current_user_win %}
+                <div class="alert alert-primary" role="alert">
+                    Your bid (${{ max_bid }}) won this auction!
+                </div>
+            {% elif not listing.is_active %}
+                <div class="alert alert-primary" role="alert">
+                    The winning bid is (${{ max_bid }})!
+                </div>
             {% endif %}
-        </h2>
-        {% watchlist_forms %}
-    </div>
-    <div>
-        {% if listing.img_url %}
-            <img src="{{ listing.img_url }}" alt="{{ listing.title }}">
-        {% else %}
-            <img src="{% static 'auctions/images/notfound.png' %}" alt="img not found">
-        {% endif %}
-    </div>
-    <p>{{ listing.description }}</p>
-    <p><strong>${{ listing.price }}</strong></p>
-
-    <!-- bidding info -->
-    {% if show_bid_form %}
-        {% if bid_form_error %}
-            <div class="alert alert-danger">{{ bid_form_error }}</div>
-        {% endif %}
-        <div>
-            <small>{{ bids_count }} bid{{ bids_count|pluralize }} so far. Your Bid is the Current Bid</small>
-            <form action="{% url 'place_bid' listing.id %}" method="POST">
-                {% csrf_token %}
-                {{ bid_form.as_p }}
-                <input type="submit" value="Place Bid" class="btn btn-primary">
-            </form>
         </div>
 
-    <!-- there must actual bids from other users
-        so that, owner initial price doesn't show as bid with count 1
-    -->
-    {% elif show_bids and bids_count %}
+        <div class="title-container">
+            <h2>
+                Listing: {{ listing.title }}
+                {% if not listing.is_active %}
+                    <span class="badge badge-secondary">Closed</span>
+                {% endif %}
+            </h2>
+            {% watchlist_forms %}
+        </div>
         <div>
-            Max Bid:
-            <strong>${{ max_bid }}</strong>
-            {% if can_close_listing %}
-                <form action="{% url 'close_listing' listing.id %}" method="POST">
+            {% if listing.img_url %}
+                <img src="{{ listing.img_url }}" alt="{{ listing.title }}">
+            {% else %}
+                <img src="{% static 'auctions/images/notfound.png' %}" alt="img not found">
+            {% endif %}
+        </div>
+        <p>{{ listing.description }}</p>
+        <p><strong>${{ listing.price }}</strong></p>
+
+        <div class="listing-bids">
+            {% if show_bid_form %}
+                {% if bid_form_error %}
+                    <div class="alert alert-danger">{{ bid_form_error }}</div>
+                {% endif %}
+                <div>
+                    <small>{{ bids_count }} bid{{ bids_count|pluralize }} so far. Your Bid is the Current Bid</small>
+                    <form class="bid-form" method="POST">
+                        {% csrf_token %}
+                        {{ bid_form.as_p }}
+                        <input type="submit" value="Place Bid" class="btn btn-primary">
+                    </form>
+                </div>
+
+            <!-- there must actual bids from other users
+                so that, owner initial price doesn't show as bid with count 1
+            -->
+            {% elif show_bids and bids_count %}
+                <div>
+                    Max Bid:
+                    <strong>${{ max_bid }}</strong>
+                    {% if can_close_listing %}
+                        <form action="{% url 'close_listing' listing.id %}" method="POST">
+                            {% csrf_token %}
+                            <input class="btn btn-primary" type="submit" value="Accept Bid & Close Listing">
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="listing-info">
+            <h3>Details</h3>
+            <ul>
+                <li>Listed by: 
+                    <a href="{% url 'user_profile' listing.owner.username %}">
+                        {{ listing.owner }}
+                    </a>
+                </li>
+                <li>Category:
+                    {% if listing.category %}
+                        <a href="{% url 'display_category' listing.category.id %}">
+                            {{ listing.category }}
+                        </a>
+                    {% else %}
+                        <span>No Category Listed</span>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+
+        <div class="listing-comments">
+            {% if show_comments_form %}
+                <h3>Leave a Comment</h3>
+                <form action="{% url 'add_comment' listing.id %}" method="POST">
                     {% csrf_token %}
-                    <input class="btn btn-primary" type="submit" value="Accept Bid & Close Listing">
+                    {{ comment_form }}
+                    <input type="submit" value="Add">
                 </form>
             {% endif %}
+            <h3>Comments</h3>
+            <ul>
+                {% for comment in comments %}
+                <li>
+                    <span>{{ comment.content }}</span>
+                    <a href="{% url 'user_profile' comment.user.username %}">
+                        {{ comment.user }}
+                    </a>
+                </li>
+                {% empty %}
+                    <li>No comments yet.</li>
+                {% endfor %}
+            </ul>
         </div>
-    {% endif %}
-    <h3>Details</h3>
-    <ul>
-        <li>Listed by: 
-            <a href="{% url 'user_profile' listing.owner.username %}">
-                {{ listing.owner }}
-            </a>
-        </li>
-        <li>Category:
-            {% if listing.category %}
-                <a href="{% url 'display_category' listing.category.id %}">
-                    {{ listing.category }}
-                </a>
-            {% else %}
-                <span>No Category Listed</span>
-            {% endif %}
-        </li>
-    </ul>
+    </div>
 
-    {% if show_comments_form %}
-        <h3>Leave a Comment</h3>
-        <form action="{% url 'add_comment' listing.id %}" method="POST">
-            {% csrf_token %}
-            {{ comment_form }}
-            <input type="submit" value="Add">
-        </form>
-    {% endif %}
-    <h3>Comments</h3>
-    <ul>
-        {% for comment in comments %}
-        <li>
-            <span>{{ comment.content }}</span>
-            <a href="{% url 'user_profile' comment.user.username %}">
-                {{ comment.user }}
-            </a>
-        </li>
-        {% empty %}
-            <li>No comments yet.</li>
-        {% endfor %}
-    </ul>
+    <script src="{% static 'auctions/listing.js' %}"></script>
 {% endblock %}

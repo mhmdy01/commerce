@@ -1,7 +1,9 @@
 from django import forms
-from django.db.models import fields
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
 from .models import Listing, Bid, Comment
+
 
 class NewListingForm(forms.ModelForm):
     class Meta:
@@ -12,6 +14,22 @@ class NewBidForm(forms.ModelForm):
     class Meta:
         model = Bid
         fields = ['price']
+
+    def __init__(self, *args, **kwargs):
+        self.max_bid_price = kwargs.pop('max_bid_price')
+        super(NewBidForm, self).__init__(*args, **kwargs)
+        # self.fields['price'].validators = [MinValueValidator(max_bid_price)]
+
+    def clean_price(self):
+        """validate bid price.
+        MUST BE GREATER THAN max bid so far.
+        """
+        data = self.cleaned_data['price']
+        if data <= self.max_bid_price:
+            error_msg = f"Your bid (${data}) must be greater than the current max bid of (${self.max_bid_price})"
+            raise ValidationError(error_msg)
+        return data
+
 
 class NewCommentForm(forms.ModelForm):
     # trick used to hide field label @form

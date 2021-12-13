@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Max
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.generic import ListView
@@ -148,7 +148,7 @@ def display_listing(request, listing_id):
         'show_comments_form': show_comments_form,
         'can_close_listing': can_close_listing,
         'did_current_user_win': did_current_user_win,
-        'bid_form': NewBidForm(),
+        'bid_form': NewBidForm(max_bid_price=None),
         'comment_form': NewCommentForm()
     })
 
@@ -203,29 +203,24 @@ def place_bid(request, listing_id):
         return HttpResponseBadRequest()
 
     # validate bidding form
-    form = NewBidForm(request.POST)
+    max_bid_price = utils.get_max_bid_price(listing)
+    form = NewBidForm(request.POST, max_bid_price=max_bid_price)
     if form.is_valid():
-        # validate bid price
-        # MUST BE GREATER THAN max bid so far
-        bid_price = form.instance.price
-        max_bid_price = utils.get_max_bid_price(listing)
-        # if not valid price
-        # inform user
-        if bid_price <= max_bid_price:
-            error = f"Your bid (${bid_price}) must be greater than the current max bid of (${max_bid_price})"
-            return HttpResponseBadRequest(error)
-
         # if valid price
         # create a new bid
-        # and redirect to listing page
         form.instance.user = request.user
         form.instance.listing = listing
         form.save()
-        return redirect(reverse('display_listing', args=(listing_id,)))
+        # and send new bids count to client
+        # do we really need to query db each time?
+        # cant increment whatever user sees instead?
+        # anyway, whenver user refresh page
+        # all correct data will be there
+        return HttpResponse()
     else:
-        # access form errors and send to user
-        error = str(form.errors)
-        return HttpResponseBadRequest(error)
+        # access form errors and send to client
+        errors = form.errors.as_json(escape_html=True)
+        return JsonResponse(errors, safe=False, status=400)
 
 
 @login_required(login_url='login')
