@@ -92,48 +92,49 @@ def create_listing(request):
             'form': NewListingForm()
         })
 
+
 def display_listing(request, listing_id):
     listing = Listing.objects.get(pk=listing_id)
     comments = listing.comments.all()
 
+    # bidding details
     bids_count = listing.bids.count()
     max_bid = utils.get_max_bid_price(listing)
 
-    show_bid_form = (
+    # when to show bidding form?
+    #  - current user is logged in
+    #  - listing is active
+    #  - listing isn't created by current user
+    # when to show accept_bid/close_listing form?
+    #  - current user is logged in
+    #  - listing is active
+    #  - current user is listing owner
+    #  - THERE MUST BE at least one bid on listing
+    can_place_bid = (
         request.user.is_authenticated
+        and listing.is_active
         and listing.owner != request.user
-        and listing.is_active
     )
-    show_bids = (
-        request.user.is_authenticated
-        and listing.owner == request.user
-        and listing.is_active
-    )
-    # print('show_bid_form:', show_bid_form)
-    # print('show_bids:', show_bids)
-    
-    # only available if at least one bid? and not already close
     can_close_listing = (
-        show_bids
+        request.user.is_authenticated
+        and listing.is_active
+        and listing.owner == request.user
         and bids_count > 0
     )
-    # TODO/tradeoffs: short-circuting using and vs. implicit conditions @filters
-    ##### THIS BAD #####
-    # no need to check authentication (ie. req.user.is_auth)
-    # cuz we filter by current user and if not authenticated, filtering would fail
-    # no need to check for listing status (ie. listing.is_active)
-    # cuz we filter by winning bid and if there's any,
-    # that means the listing is already closed
-    # did_current_user_win = listing.bids.filter(user=request.user, is_winner=True).count() == 1
-    ##### ------ #####
-    ##### THIS GOOD #####
+
+    # inform user if they placed a bid
+    # on this listing and it won listing auction
     did_current_user_win = (
         request.user.is_authenticated
         and not listing.is_active
         and listing.bids.filter(user=request.user, is_winner=True).count() == 1
     )
 
-    show_comments_form = (
+    # commenting details
+    # when to show commenting form?
+    #  - current user is logged in
+    #  - listing is active
+    can_write_comment = (
         request.user.is_authenticated
         and listing.is_active
     )
@@ -143,10 +144,9 @@ def display_listing(request, listing_id):
         'comments': comments,
         'bids_count': bids_count,
         'max_bid': max_bid,
-        'show_bid_form': show_bid_form,
-        'show_bids': show_bids,
-        'show_comments_form': show_comments_form,
+        'can_place_bid': can_place_bid,
         'can_close_listing': can_close_listing,
+        'can_write_comment': can_write_comment,
         'did_current_user_win': did_current_user_win,
         'bid_form': NewBidForm(max_bid_price=None),
         'comment_form': NewCommentForm()
