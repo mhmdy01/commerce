@@ -55,6 +55,7 @@ class PlaceBidTests(TestCase):
         self.client.login(**self.not_listing_owner_login_credentials)
 
         response = self.client.post(f"/listings/{self.active_listing_to_bid_on.id + 1}/bid", bid_fields)
+        # TODO: is 400 the valid the status code?
         self.assertEqual(response.status_code, 400)
 
     def test_place_bid_fails_notactive(self):
@@ -102,3 +103,81 @@ class PlaceBidTests(TestCase):
         # self.assertEqual(Bid.objects.last().price, bid_fields['price'])
         self.assertEqual(self.active_listing_to_bid_on.bids.count(), 1)
         self.assertEqual(self.active_listing_to_bid_on.bids.last().price, bid_fields['price'])
+
+
+class AcceptBidTests(TestCase):
+    """tests for views.accept_max_bid"""
+    def setUp(self):
+        """populate db and config http client"""
+        # populate db
+        foo = User.objects.create_user(**foo_credentials)
+        bar = User.objects.create_user(**bar_credentials)
+
+        listing1 = Listing.objects.create(owner=foo, **listing_fields)
+        listing2 = Listing.objects.create(owner=foo, is_active=False, **listing_fields)
+        listing3 = Listing.objects.create(owner=foo, **listing_fields)
+
+        Bid.objects.create(listing=listing1, user=bar, price=bid_fields['price'])
+
+        # config client
+        self.owner = foo
+        self.owner_login_credentials = foo_credentials
+
+        self.not_owner = bar
+        self.not_owner_login_credentials = bar_credentials
+
+        self.listing = listing1
+        self.closed_listing = listing2
+        self.nobids_listing = listing3
+
+    def test_accept_bid_fails_notloggedin(self):
+        """check that accepting a bid fails if user isn't loggedin"""
+        response = self.client.post(f"/listings/{self.listing.id}/close")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/login'))
+
+    def test_accept_bid_fails_notexist(self):
+        """check that accepting a bid fails if listing doesn't exist in db"""
+        # login first
+        self.client.login(**self.owner_login_credentials)
+
+        response = self.client.post(f"/listings/{self.listing.id + 100}/close")
+        self.assertEqual(response.status_code, 404)
+
+    def test_accept_bid_fails_notowner(self):
+        """check that accepting a bid fails if user isn't listing owner"""
+        # login first
+        self.client.login(**self.not_owner_login_credentials)
+
+        response = self.client.post(f"/listings/{self.listing.id}/close")
+        self.assertEqual(response.status_code, 401)
+
+    def test_accept_bid_fails_notactive(self):
+        """check that accepting a bid fails if listing isn't active"""
+        # login first
+        self.client.login(**self.owner_login_credentials)
+
+        response = self.client.post(f"/listings/{self.closed_listing.id}/close")
+        self.assertEqual(response.status_code, 400)
+
+    def test_accept_bid_fails_nobids(self):
+        """check that accepting a bid fails if listing has no bids yet"""
+        # login first
+        self.client.login(**self.owner_login_credentials)
+
+        response = self.client.post(f"/listings/{self.nobids_listing.id}/close")
+        self.assertEqual(response.status_code, 400)
+
+    def test_accept_bid_works(self):
+        """check that listing owner can accept a winning bid"""
+        # login first
+        self.client.login(**self.owner_login_credentials)
+
+        response = self.client.post(f"/listings/{self.listing.id}/close")
+        # pov: client/view/template
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/listings'))
+        self.assertIn(str(self.listing.id), response.url)
+        # pov: db
+        self.assertFalse(Listing.objects.first().is_active)
+        self.assertTrue(Bid.objects.first().is_winner)

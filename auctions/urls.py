@@ -12,10 +12,10 @@ urlpatterns = [
     path("users/<str:username>", views.user_profile, name="user_profile"),
     path("categories/<int:category_id>", views.display_category, name="display_category"),
     path("categories", views.all_categories, name="all_categories"),
-    
+
     path("listings/<int:listing_id>/bid", views.place_bid, name="place_bid"),
 
-    path("listings/<int:listing_id>/close", views.close_listing, name="close_listing"),
+    path("listings/<int:listing_id>/close", views.accept_max_bid, name="accept_max_bid"),
 
     path("listings/<int:listing_id>/comment", views.add_comment, name="add_comment"),
 

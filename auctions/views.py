@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Max
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.generic import ListView
@@ -152,18 +152,48 @@ def display_listing(request, listing_id):
         'comment_form': NewCommentForm()
     })
 
-def close_listing(request, listing_id):
+
+@login_required(login_url='login')
+def accept_max_bid(request, listing_id):
+    """
+    Accept current max bid on specific listing (`listing_id`) as a winner.
+    And mark listing as closed.
+    """
+    # reject non-POST requests
     if not request.method == 'POST':
-        return HttpResponseForbidden()
-    listing = Listing.objects.get(pk=listing_id)
-    listing.is_active = False
-    listing.save()
-    # find winner bid for this listing (the one with max price)
-    price_of_max_bid = listing.bids.all().aggregate(Max('price')).get('price__max')
-    max_bid = listing.bids.get(price=price_of_max_bid)
+        return HttpResponseNotAllowed(['POST'])
+
+    # get listing and handle if not found
+    listing = get_object_or_404(Listing, pk=listing_id)
+
+    # can't accept a bid if:
+    #  - user isn't listing owner
+    #  - listing is closed
+    #  - listing has no bids yet
+    not_owner = listing.owner != request.user
+    is_closed = not listing.is_active
+    has_no_bids = listing.bids.count() == 0
+    if not_owner:
+        return HttpResponse(status=401)
+    if is_closed or has_no_bids:
+        return HttpResponseBadRequest()
+
+    # find max bid and mark it as winner
+    # why last bid?
+    # because bids have increasing prices
+    # we ensure that when inserting a new bid
+    # (new bid must be greater than all previous bids)
+    max_bid = listing.bids.last()
     max_bid.is_winner = True
     max_bid.save()
-    return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+
+    # close listing
+    listing.is_active = False
+    listing.save()
+
+    # redirect to listing_details page
+    return redirect(reverse('display_listing', args=(listing_id,)))
+
 
 def user_profile(request, username):
     user = User.objects.get(username=username)

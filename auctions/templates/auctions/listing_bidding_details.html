@@ -11,7 +11,7 @@
     {% elif can_close_listing %}
         <div>
             <span>Max Bid: <strong>${{ max_bid }}</strong></span>
-            <form action="{% url 'close_listing' listing.id %}" method="POST">
+            <form action="{% url 'accept_max_bid' listing.id %}" method="POST">
                 {% csrf_token %}
                 <strong>Note: Accepting a bid will close listing and mark that bid as a winner.</strong><br>
                 <input class="btn btn-primary" type="submit" value="Accept">
