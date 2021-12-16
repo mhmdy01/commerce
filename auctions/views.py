@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
 
 from . import utils
 from .models import User, Listing, Category, Watchlist
@@ -189,12 +190,9 @@ def display_listing(request, listing_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def place_bid(request, listing_id):
     """Place a new bid on specific listing (`listing_id`)."""
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
     # get listing and handle if not found
     listing = get_object_or_404(Listing, pk=listing_id)
 
@@ -228,15 +226,12 @@ def place_bid(request, listing_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def accept_max_bid(request, listing_id):
     """
     Accept current max bid on specific listing (`listing_id`) as a winner.
     And mark listing as closed.
     """
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
     # get listing and handle if not found
     listing = get_object_or_404(Listing, pk=listing_id)
 
@@ -270,11 +265,8 @@ def accept_max_bid(request, listing_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def add_comment(request, listing_id):
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
     # get listing and handle if not found
     listing = get_object_or_404(Listing, pk=listing_id)
 
@@ -293,11 +285,8 @@ def add_comment(request, listing_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def add_to_watchlist(request, listing_id):
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
     # get listing and handle if not found
     listing = get_object_or_404(Listing, pk=listing_id)
 
@@ -319,11 +308,8 @@ def add_to_watchlist(request, listing_id):
 
 
 @login_required(login_url='login')
+@require_POST
 def remove_from_watchlist(request, listing_id):
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
     # get listing and handle if not found
     listing = get_object_or_404(Listing, pk=listing_id)
 
