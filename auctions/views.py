@@ -12,6 +12,7 @@ from . import utils
 from .models import Bid, User, Listing, Category, Watchlist
 from .forms import NewListingForm, NewBidForm, NewCommentForm
 
+
 def index(request):
     return render(request, "auctions/index.html", {
         "listings": Listing.objects.filter(is_active=True)
@@ -74,6 +75,7 @@ def register(request):
     else:
         return render(request, "auctions/register.html")
 
+
 @login_required(login_url='login')
 def create_listing(request):
     if request.method == 'POST':
@@ -94,45 +96,77 @@ def create_listing(request):
 
 
 def display_listing(request, listing_id):
+    """Display details of specific listing (`listing_id`)"""
     listing = Listing.objects.get(pk=listing_id)
-    comments = listing.comments.all()
 
     # bidding details
     bids_count = listing.bids.count()
     max_bid_price = utils.get_max_bid_price(listing)
+    # what bid-related parts can user see?
+    # for active listings:
+    #   - #bids: all users (loggedin or not)
+    #   - accept_bid form: loggedin, owner
+    #   - place_bid form: loggedin, not owner
+    # for closed listings:
+    #   - inform, congrats (eg. you bought...): user won
+    #   - only inform (eg. sold for...): user didn't win
+
+    # when to show bids count?
+    #   - listing is active
+    can_see_bids_count = listing.is_active
 
     # when to show bidding form?
-    #  - current user is logged in
-    #  - listing is active
-    #  - listing isn't created by current user
-    # when to show accept_bid/close_listing form?
-    #  - current user is logged in
-    #  - listing is active
-    #  - current user is listing owner
-    #  - THERE MUST BE at least one bid on listing
+    #   - user is logged in
+    #   - user isn't listing owner
+    #   - listing is active
     can_place_bid = (
         request.user.is_authenticated
-        and listing.is_active
         and listing.owner != request.user
-    )
-    can_close_listing = (
-        request.user.is_authenticated
         and listing.is_active
+    )
+
+    # when to show accept_bid/close_listing form?
+    #  - user is logged in
+    #  - user is listing owner
+    #  - listing is active
+    #  - THERE MUST BE at least one bid on listing
+    can_accept_bid = (
+        request.user.is_authenticated
         and listing.owner == request.user
+        and listing.is_active
         and bids_count > 0
     )
 
-    # inform user if they placed a bid
-    # on this listing and it won listing auction
-    did_current_user_win = (
-        request.user.is_authenticated
-        and not listing.is_active
-        and listing.bids.filter(user=request.user, is_winner=True).count() == 1
+    # when to congrats user?
+    #   - listing is closed
+    #   - they placed (owner of) winning bid
+    # NOTE:
+    # - if listing is closed there must be a winning bid
+    # - and that winning bid is always the last bid
+    latest_bid = listing.bids.last()
+    inform_and_congrats_user = (
+        not listing.is_active
+        and latest_bid.user == request.user
+    )
+    # when to show winning bid?
+    #   - listing is closed
+    #   - user isn't owner of winning bid
+    inform_but_not_congrats = (
+        not listing.is_active
+        and latest_bid.user != request.user
     )
 
     # commenting details
+    comments = listing.comments.all()
+    # what comment-related parts can user see?
+    # for active listings:
+    #   - commenting form: loggedin users (owner, others)
+    #   - comments: all users (loggedin, not)
+    # for closed listings:
+    #   - comments: all users (loggedin, not)
+
     # when to show commenting form?
-    #  - current user is logged in
+    #  - user is logged in
     #  - listing is active
     can_write_comment = (
         request.user.is_authenticated
@@ -141,15 +175,17 @@ def display_listing(request, listing_id):
 
     return render(request, 'auctions/listing.html', {
         'listing': listing,
-        'comments': comments,
         'bids_count': bids_count,
         'max_bid': max_bid_price,
+        'can_see_bids_count': can_see_bids_count,
         'can_place_bid': can_place_bid,
-        'can_close_listing': can_close_listing,
-        'can_write_comment': can_write_comment,
-        'did_current_user_win': did_current_user_win,
+        'can_accept_bid': can_accept_bid,
         'bid_form': NewBidForm(max_bid_price=None),
-        'comment_form': NewCommentForm()
+        'inform_and_congrats_user': inform_and_congrats_user,
+        'inform_but_not_congrats': inform_but_not_congrats,
+        'comments': comments,
+        'can_write_comment': can_write_comment,
+        'comment_form': NewCommentForm(),
     })
 
 

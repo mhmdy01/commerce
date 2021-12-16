@@ -1,25 +1,28 @@
 <div class="listing-bids">
+    {% if can_see_bids_count %}
+        <div class="bids-count">
+            <span>{{ bids_count }} bid{{ bids_count|pluralize }} so far.</small>
+        </div>
+    {% endif %}
+
     {% if can_place_bid %}
-        <div>
-            <small>{{ bids_count }} bid{{ bids_count|pluralize }} so far. Your Bid is the Current Bid</small>
+        <div class="bids-new">
             <form class="bid-form" method="POST">
                 {% csrf_token %}
                 {{ bid_form.as_p }}
                 <input type="submit" value="Place Bid" class="btn btn-primary">
             </form>
         </div>
-    {% elif can_close_listing %}
-        <div>
+    {% elif can_accept_bid %}
+        <div class="bids-accept">
             <span>Max Bid: <strong>${{ max_bid }}</strong></span>
             <form action="{% url 'accept_max_bid' listing.id %}" method="POST">
                 {% csrf_token %}
-                <strong>Note: Accepting a bid will close listing and mark that bid as a winner.</strong><br>
-                <input class="btn btn-primary" type="submit" value="Accept">
+                <input class="btn btn-primary" type="submit" value="Accept"><br>
+                <strong>
+                    <em>Note: Accepting a bid will close listing and mark that bid as a winner.</em>
+                </strong>
             </form>
-        </div>
-    {% elif not can_close_listing %}
-        <div>
-            <span>No bids yet.</span>
         </div>
     {% endif %}
 </div>

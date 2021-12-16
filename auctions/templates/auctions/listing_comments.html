@@ -1,0 +1,28 @@
+<div class="listing-comments">
+    {% if can_write_comment %}
+        <div class="new-comment">
+            <h3>Leave a Comment</h3>
+            <form action="{% url 'add_comment' listing.id %}" method="POST">
+                {% csrf_token %}
+                {{ comment_form }}
+                <input type="submit" value="Add">
+            </form>
+        </div>
+    {% endif %}
+
+    <div class="comment-list">
+        <h3>Comments</h3>
+        <ul>
+            {% for comment in comments %}
+            <li>
+                <span>{{ comment.content }}</span>
+                <a href="{% url 'user_profile' comment.user.username %}">
+                    {{ comment.user }}
+                </a>
+            </li>
+            {% empty %}
+                <li>No comments yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
