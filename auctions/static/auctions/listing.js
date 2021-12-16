@@ -100,10 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const listingId = listingDiv.dataset.id;
     const bidForm = listingDiv.querySelector('.bid-form')
 
-    bidForm.onsubmit = () => {
-        placeBid(listingId, bidForm);
+    // bidding form is only shown on specific scenarios
+    // and won't always be there
+    // so we need to check if it exists on page
+    if (bidForm) {
+        bidForm.onsubmit = () => {
+            placeBid(listingId, bidForm);
 
-        // disable default form submission behavior
-        return false;
+            // disable default form submission behavior
+            return false;
+        }
     }
 })
