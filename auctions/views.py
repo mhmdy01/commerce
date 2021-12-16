@@ -99,7 +99,7 @@ def display_listing(request, listing_id):
 
     # bidding details
     bids_count = listing.bids.count()
-    max_bid = utils.get_max_bid_price(listing)
+    max_bid_price = utils.get_max_bid_price(listing)
 
     # when to show bidding form?
     #  - current user is logged in
@@ -143,7 +143,7 @@ def display_listing(request, listing_id):
         'listing': listing,
         'comments': comments,
         'bids_count': bids_count,
-        'max_bid': max_bid,
+        'max_bid': max_bid_price,
         'can_place_bid': can_place_bid,
         'can_close_listing': can_close_listing,
         'can_write_comment': can_write_comment,
@@ -217,6 +217,7 @@ def all_categories(request):
 
 @login_required(login_url='login')
 def place_bid(request, listing_id):
+    """Place a new bid on specific listing (`listing_id`)."""
     # reject non-POST requests
     if not request.method == 'POST':
         return HttpResponseNotAllowed(['POST'])
@@ -225,10 +226,10 @@ def place_bid(request, listing_id):
     listing = get_object_or_404(Listing, pk=listing_id)
 
     # reject bidding if:
+    #  - user is listing owner
     #  - listing is closed
-    #  - current user is listing owner
-    is_closed = not listing.is_active
     is_owner = listing.owner == request.user
+    is_closed = not listing.is_active
     if is_closed or is_owner:
         return HttpResponseBadRequest()
 

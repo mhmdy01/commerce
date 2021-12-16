@@ -97,7 +97,7 @@ class PlaceBidTests(TestCase):
 
         response = self.client.post(f"/listings/{self.active_listing_to_bid_on.id}/bid", bid_fields)
         # pov: client
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         # pov: db
         # self.assertEqual(Bid.objects.count(), 1)
         # self.assertEqual(Bid.objects.last().price, bid_fields['price'])

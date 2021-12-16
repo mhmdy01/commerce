@@ -2,14 +2,14 @@ from django.db.models import Max
 
 
 def get_max_bid_price(listing):
+    """Get price of max bid on specific `listing`.
+    max price is:
+    - if listing has no bids yet: listing initial price
+    - if listing has bids: price of most recent one
     """
-    max bid price is:
-     - initial price (if listing has no bids yet)
-     - max value (aggregate) of price field for all bids (if listing has bids)
-    """
-    bids_count = listing.bids.count()
-    if bids_count == 0:
+    max_bid = listing.bids.last()
+    if max_bid is None:
         max_bid_price = listing.price
     else:
-        max_bid_price = listing.bids.all().aggregate(Max('price')).get('price__max')
+        max_bid_price = max_bid.price
     return max_bid_price
