@@ -1,7 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
-from django.db.models import Max
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -9,7 +8,7 @@ from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from . import utils
-from .models import Bid, User, Listing, Category, Watchlist
+from .models import User, Listing, Category, Watchlist
 from .forms import NewListingForm, NewBidForm, NewCommentForm
 
 
@@ -190,6 +189,45 @@ def display_listing(request, listing_id):
 
 
 @login_required(login_url='login')
+def place_bid(request, listing_id):
+    """Place a new bid on specific listing (`listing_id`)."""
+    # reject non-POST requests
+    if not request.method == 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    # get listing and handle if not found
+    listing = get_object_or_404(Listing, pk=listing_id)
+
+    # reject bidding if:
+    #  - user is listing owner
+    #  - listing is closed
+    is_owner = listing.owner == request.user
+    is_closed = not listing.is_active
+    if is_closed or is_owner:
+        return HttpResponseBadRequest()
+
+    # validate bidding form
+    max_bid_price = utils.get_max_bid_price(listing)
+    form = NewBidForm(request.POST, max_bid_price=max_bid_price)
+    if form.is_valid():
+        # if valid price
+        # create a new bid
+        form.instance.user = request.user
+        form.instance.listing = listing
+        form.save()
+        # and send new bids count to client
+        # do we really need to query db each time?
+        # cant increment whatever user sees instead?
+        # anyway, whenver user refresh page
+        # all correct data will be there
+        return HttpResponse()
+    else:
+        # access form errors and send to client
+        errors = form.errors.as_json(escape_html=True)
+        return JsonResponse(errors, safe=False, status=400)
+
+
+@login_required(login_url='login')
 def accept_max_bid(request, listing_id):
     """
     Accept current max bid on specific listing (`listing_id`) as a winner.
@@ -229,65 +267,6 @@ def accept_max_bid(request, listing_id):
 
     # redirect to listing_details page
     return redirect(reverse('display_listing', args=(listing_id,)))
-
-
-def user_profile(request, username):
-    user = User.objects.get(username=username)
-    return render(request, 'auctions/user.html', {
-        'user_obj': user,
-        'listings': user.listings.all(),
-    })
-
-def display_category(request, category_id):
-    category = Category.objects.get(pk=category_id)
-    return render(request, 'auctions/category.html', {
-        'category': category,
-        'listings': category.listings.filter(is_active=True),
-    })
-
-def all_categories(request):
-    return render(request, 'auctions/categories.html', {
-        'categories': Category.objects.all(),
-    })
-
-
-@login_required(login_url='login')
-def place_bid(request, listing_id):
-    """Place a new bid on specific listing (`listing_id`)."""
-    # reject non-POST requests
-    if not request.method == 'POST':
-        return HttpResponseNotAllowed(['POST'])
-
-    # get listing and handle if not found
-    listing = get_object_or_404(Listing, pk=listing_id)
-
-    # reject bidding if:
-    #  - user is listing owner
-    #  - listing is closed
-    is_owner = listing.owner == request.user
-    is_closed = not listing.is_active
-    if is_closed or is_owner:
-        return HttpResponseBadRequest()
-
-    # validate bidding form
-    max_bid_price = utils.get_max_bid_price(listing)
-    form = NewBidForm(request.POST, max_bid_price=max_bid_price)
-    if form.is_valid():
-        # if valid price
-        # create a new bid
-        form.instance.user = request.user
-        form.instance.listing = listing
-        form.save()
-        # and send new bids count to client
-        # do we really need to query db each time?
-        # cant increment whatever user sees instead?
-        # anyway, whenver user refresh page
-        # all correct data will be there
-        return HttpResponse()
-    else:
-        # access form errors and send to client
-        errors = form.errors.as_json(escape_html=True)
-        return JsonResponse(errors, safe=False, status=400)
 
 
 @login_required(login_url='login')
@@ -357,6 +336,27 @@ def remove_from_watchlist(request, listing_id):
 
     # redirect to listing details page
     return redirect(reverse('display_listing', args=(listing_id,)))
+
+
+def user_profile(request, username):
+    user = User.objects.get(username=username)
+    return render(request, 'auctions/user.html', {
+        'user_obj': user,
+        'listings': user.listings.all(),
+    })
+
+def display_category(request, category_id):
+    category = Category.objects.get(pk=category_id)
+    return render(request, 'auctions/category.html', {
+        'category': category,
+        'listings': category.listings.filter(is_active=True),
+    })
+
+def all_categories(request):
+    return render(request, 'auctions/categories.html', {
+        'categories': Category.objects.all(),
+    })
+
 
 
 class WatchlistView(LoginRequiredMixin, ListView):
