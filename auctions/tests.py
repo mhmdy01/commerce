@@ -21,6 +21,69 @@ bid_fields = {
 }
 
 
+class CreateListingTests(TestCase):
+    """tests for views.create_listing"""
+    def setUp(self):
+        """populate db and config http client"""
+        # populate db
+        foo = User.objects.create_user(**foo_credentials)
+
+        Listing.objects.create(owner=foo, **listing_fields)
+
+        # config client
+        self.user = foo
+        self.user_login_credentials = foo_credentials
+
+    def test_get_fails_notloggedin(self):
+        """check that page isn't available for unauthenticated users"""
+        response = self.client.get(f"/listings/new")
+
+        # pov/response: should redirect to login page
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/login'))
+
+    def test_fails_notloggedin(self):
+        """check that creating a listing fails if user isn't loggedin"""
+        response = self.client.post(f"/listings/new")
+
+        # pov/response: should redirect to login page
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/login'))
+
+    def test_fails_invalid_price(self):
+        """check that creating a listing fails if price isn't valid (eg. <= 0)"""
+        # must login first
+        self.client.login(**self.user_login_credentials)
+
+        listing_to_add = listing_fields
+        listing_to_add['price'] = 0
+        response = self.client.post(f"/listings/new", listing_to_add)
+
+        # pov/response: should have failing status code
+        self.assertEqual(response.status_code, 400)
+        # pov/response: should have error msg
+        self.assertTrue(hasattr(response.context['form'], 'errors'))
+        self.assertIn('Ensure this value is', str(response.context['form'].errors))
+
+    def test_works(self):
+        """check that loggedin users can create new listings"""
+        # must login first
+        self.client.login(**self.user_login_credentials)
+
+        listing_to_add = listing_fields
+        listing_to_add['price'] = 10
+        response = self.client.post(f"/listings/new", listing_to_add)
+
+        # pov/response: should redirect to details page
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(f'listings/2'))
+
+        # pov/db: objects count should increase by one
+        # and new object should exist
+        self.assertEqual(Listing.objects.count(), 2)
+        self.assertEqual(Listing.objects.last().title, listing_to_add['title'])
+
+
 class PlaceBidTests(TestCase):
     """tests for views.place_bid"""
     def setUp(self):

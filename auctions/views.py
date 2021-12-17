@@ -78,6 +78,8 @@ def register(request):
 
 @login_required(login_url='login')
 def create_listing(request):
+    """Create a new listing."""
+    # when submiting form
     if request.method == 'POST':
         form = NewListingForm(request.POST)
         if form.is_valid():
@@ -88,8 +90,9 @@ def create_listing(request):
         else:
             return render(request, 'auctions/create_listing.html', {
                 'form': form
-            })
+            }, status=400)
     else:
+        # when visting page
         return render(request, 'auctions/create_listing.html', {
             'form': NewListingForm()
         })

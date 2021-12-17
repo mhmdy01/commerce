@@ -10,6 +10,7 @@ class NewListingForm(forms.ModelForm):
         model = Listing
         fields = ['title', 'description', 'img_url', 'price', 'category']
 
+
 class NewBidForm(forms.ModelForm):
     class Meta:
         model = Bid
