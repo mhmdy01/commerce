@@ -318,12 +318,20 @@ def remove_from_watchlist(request, listing_id):
     return redirect(reverse('display_listing', args=(listing_id,)))
 
 
-def user_profile(request, username):
-    user = User.objects.get(username=username)
-    return render(request, 'auctions/user.html', {
-        'user_obj': user,
-        'listings': user.listings.all(),
-    })
+class ProfileView(DetailView):
+    """Display profile page.
+    A profile page shows user info and their current active listings.
+    """
+    template_name = 'auctions/user.html'
+    context_object_name = 'profile_user'
+
+    def get_object(self):
+        return get_object_or_404(User, username=self.kwargs['username'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['listings'] = context['profile_user'].listings.filter(is_active=True)
+        return context
 
 
 class AllCategoriesView(ListView):

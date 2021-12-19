@@ -9,7 +9,7 @@ urlpatterns = [
     path("register", views.register, name="register"),
     path("listings/new", views.CreateListingView.as_view(), name="create_listing"),
     path("listings/<int:listing_id>", views.display_listing, name="display_listing"),
-    path("users/<str:username>", views.user_profile, name="user_profile"),
+    path("users/<str:username>", views.ProfileView.as_view(), name="user_profile"),
     path("categories/<int:pk>", views.OneCategoryView.as_view(), name="display_category"),
     path("categories", views.AllCategoriesView.as_view(), name="all_categories"),
 
