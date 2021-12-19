@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 from django.views.generic.edit import CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
@@ -325,13 +325,6 @@ def user_profile(request, username):
         'listings': user.listings.all(),
     })
 
-def display_category(request, category_id):
-    category = Category.objects.get(pk=category_id)
-    return render(request, 'auctions/category.html', {
-        'category': category,
-        'listings': category.listings.filter(is_active=True),
-    })
-
 
 class AllCategoriesView(ListView):
     """List all categories on website.
@@ -340,6 +333,19 @@ class AllCategoriesView(ListView):
     model = Category
     context_object_name = 'categories'
     template_name = 'auctions/categories.html'
+
+
+class OneCategoryView(DetailView):
+    """Display category page.
+    A category page lists all active listing in that category.
+    """
+    model = Category
+    template_name = 'auctions/category.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['listings'] = context['category'].listings.filter(is_active=True)
+        return context
 
 
 class WatchlistView(LoginRequiredMixin, ListView):
