@@ -1,14 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
 
-from .models import Listing, Bid, Comment
-
-
-class NewListingForm(forms.ModelForm):
-    class Meta:
-        model = Listing
-        fields = ['title', 'description', 'img_url', 'price', 'category']
+from .models import Bid, Comment
 
 
 class NewBidForm(forms.ModelForm):

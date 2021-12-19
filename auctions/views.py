@@ -5,12 +5,13 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllow
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.generic import ListView
+from django.views.generic.edit import CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 
 from . import utils
 from .models import User, Listing, Category, Watchlist
-from .forms import NewListingForm, NewBidForm, NewCommentForm
+from .forms import NewBidForm, NewCommentForm
 
 
 def index(request):
@@ -76,26 +77,16 @@ def register(request):
         return render(request, "auctions/register.html")
 
 
-@login_required(login_url='login')
-def create_listing(request):
+class CreateListingView(LoginRequiredMixin, CreateView):
     """Create a new listing."""
-    # when submiting form
-    if request.method == 'POST':
-        form = NewListingForm(request.POST)
-        if form.is_valid():
-            listing = form.save(commit=False)
-            listing.owner = request.user
-            listing.save()
-            return redirect(reverse('display_listing', kwargs={'listing_id': listing.id}))
-        else:
-            return render(request, 'auctions/create_listing.html', {
-                'form': form
-            }, status=400)
-    else:
-        # when visting page
-        return render(request, 'auctions/create_listing.html', {
-            'form': NewListingForm()
-        })
+    model = Listing
+    fields = ['title', 'description', 'img_url', 'price', 'category']
+    template_name = 'auctions/create_listing.html'
+    login_url = 'login'
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
 
 
 def display_listing(request, listing_id):

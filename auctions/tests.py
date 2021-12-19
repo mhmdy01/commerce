@@ -60,7 +60,7 @@ class CreateListingTests(TestCase):
         response = self.client.post(f"/listings/new", listing_to_add)
 
         # pov/response: should have failing status code
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         # pov/response: should have error msg
         self.assertTrue(hasattr(response.context['form'], 'errors'))
         self.assertIn('Ensure this value is', str(response.context['form'].errors))

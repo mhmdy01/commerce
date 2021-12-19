@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.urls import reverse
 
 
 class User(AbstractUser):
@@ -32,6 +33,9 @@ class Listing(models.Model):
 
     def __str__(self):
         return f'{self.title} ({self.price})'
+
+    def get_absolute_url(self):
+        return reverse('display_listing', args=(self.id,))
 
 
 class Bid(models.Model):
