@@ -332,11 +332,14 @@ def display_category(request, category_id):
         'listings': category.listings.filter(is_active=True),
     })
 
-def all_categories(request):
-    return render(request, 'auctions/categories.html', {
-        'categories': Category.objects.all(),
-    })
 
+class AllCategoriesView(ListView):
+    """List all categories on website.
+    Each category is displayed as link that leads to category page.
+    """
+    model = Category
+    context_object_name = 'categories'
+    template_name = 'auctions/categories.html'
 
 
 class WatchlistView(LoginRequiredMixin, ListView):
